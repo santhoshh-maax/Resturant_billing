@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { query } = require('../config/db');
+const User = require('../models/User');
 require('dotenv').config();
 
 exports.login = async (req, res) => {
@@ -11,16 +11,12 @@ exports.login = async (req, res) => {
             return res.status(400).json({ error: 'Username and password are required' });
         }
 
-        const result = await query(
-            'SELECT * FROM Users WHERE username = @param0',
-            [username]
-        );
+        const user = await User.findOne({ username });
 
-        if (result.recordset.length === 0) {
+        if (!user) {
             return res.status(401).json({ error: 'Invalid username or password' });
         }
 
-        const user = result.recordset[0];
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (!isMatch) {
@@ -28,7 +24,7 @@ exports.login = async (req, res) => {
         }
 
         const token = jwt.sign(
-            { userId: user.user_id, username: user.username, role: user.role },
+            { userId: user._id, username: user.username, role: user.role },
             process.env.JWT_SECRET,
             { expiresIn: process.env.JWT_EXPIRE || '24h' }
         );
@@ -36,7 +32,7 @@ exports.login = async (req, res) => {
         res.json({
             token,
             user: {
-                userId: user.user_id,
+                userId: user._id,
                 username: user.username,
                 role: user.role
             }
@@ -63,22 +59,16 @@ exports.register = async (req, res) => {
             return res.status(400).json({ error: 'Username and password are required' });
         }
 
-        const existingUser = await query(
-            'SELECT * FROM Users WHERE username = @param0',
-            [username]
-        );
+        const existingUser = await User.findOne({ username });
 
-        if (existingUser.recordset.length > 0) {
+        if (existingUser) {
             return res.status(400).json({ error: 'Username already exists' });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
         const userRole = role || 'customer';
 
-        await query(
-            'INSERT INTO Users (username, password, role) VALUES (@param0, @param1, @param2)',
-            [username, hashedPassword, userRole]
-        );
+        await User.create({ username, password: hashedPassword, role: userRole });
 
         res.status(201).json({ message: 'User registered successfully' });
     } catch (err) {

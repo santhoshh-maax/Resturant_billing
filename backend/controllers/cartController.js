@@ -1,4 +1,4 @@
-const { query } = require('../config/db');
+const MenuItem = require('../models/MenuItem');
 
 const cartStore = {};
 
@@ -11,12 +11,9 @@ exports.addToCart = async (req, res) => {
             return res.status(400).json({ error: 'Item ID and quantity are required' });
         }
 
-        const itemResult = await query(
-            'SELECT * FROM MenuItems WHERE item_id = @param0',
-            [item_id]
-        );
+        const menuItem = await MenuItem.findById(item_id);
 
-        if (itemResult.recordset.length === 0) {
+        if (!menuItem) {
             return res.status(404).json({ error: 'Menu item not found' });
         }
 
@@ -29,17 +26,16 @@ exports.addToCart = async (req, res) => {
         );
 
         if (existingIndex >= 0) {
-            cartStore[userId][existingIndex].quantity += quantity;
+            cartStore[userId][existingIndex].quantity += parseInt(quantity);
             cartStore[userId][existingIndex].subtotal =
                 cartStore[userId][existingIndex].quantity * cartStore[userId][existingIndex].price;
         } else {
-            const menuItem = itemResult.recordset[0];
             cartStore[userId].push({
-                item_id: menuItem.item_id,
+                item_id: item_id,
                 name: menuItem.name,
                 category: menuItem.category,
                 price: menuItem.price,
-                quantity: quantity,
+                quantity: parseInt(quantity),
                 subtotal: quantity * menuItem.price,
                 image_url: menuItem.image_url
             });
@@ -121,7 +117,7 @@ exports.removeFromCart = async (req, res) => {
         }
 
         cartStore[userId] = cartStore[userId].filter(
-            item => item.item_id !== parseInt(item_id)
+            item => item.item_id !== item_id
         );
 
         res.json({

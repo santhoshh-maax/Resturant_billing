@@ -77,7 +77,7 @@ function renderMenu() {
                             <button class="quantity-btn" onclick="changeQty(this, 1)">+</button>
                         </div>
                     </div>
-                    <button class="btn btn-primary-custom w-100 mt-3" onclick="addToCart(${item.item_id})">
+                    <button class="btn btn-primary-custom w-100 mt-3" onclick="addToCart('${item.item_id}')">
                         <i class="fas fa-cart-plus me-2"></i>Add to Cart
                     </button>
                 </div>

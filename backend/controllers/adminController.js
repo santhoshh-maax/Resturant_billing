@@ -1,38 +1,55 @@
-const { query } = require('../config/db');
+const mongoose = require('mongoose');
+const Order = require('../models/Order');
+const MenuItem = require('../models/MenuItem');
+const User = require('../models/User');
 
 exports.getDashboard = async (req, res) => {
     try {
-        const totalOrdersResult = await query('SELECT COUNT(*) as count FROM Orders');
-        const totalOrders = totalOrdersResult.recordset[0].count;
+        const totalOrders = await Order.countDocuments();
+        const totalRevenueResult = await Order.aggregate([
+            { $group: { _id: null, total: { $sum: '$total_amount' } } }
+        ]);
+        const totalRevenue = totalRevenueResult.length > 0 ? totalRevenueResult[0].total : 0;
+        const totalMenuItems = await MenuItem.countDocuments();
 
-        const revenueResult = await query(
-            'SELECT ISNULL(SUM(total_amount), 0) as total FROM Orders'
-        );
-        const totalRevenue = revenueResult.recordset[0].total;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todaySalesResult = await Order.aggregate([
+            { $match: { order_date: { $gte: today } } },
+            { $group: { _id: null, total: { $sum: '$total_amount' } } }
+        ]);
+        const todaySales = todaySalesResult.length > 0 ? todaySalesResult[0].total : 0;
 
-        const menuItemsResult = await query('SELECT COUNT(*) as count FROM MenuItems');
-        const totalMenuItems = menuItemsResult.recordset[0].count;
-
-        const todaySalesResult = await query(
-            `SELECT ISNULL(SUM(total_amount), 0) as total
-             FROM Orders
-             WHERE CAST(order_date AS DATE) = CAST(GETDATE() AS DATE)`
-        );
-        const todaySales = todaySalesResult.recordset[0].total;
-
-        const recentOrders = await query(
-            `SELECT TOP 5 o.*, u.username as customer_name
-             FROM Orders o
-             JOIN Users u ON o.customer_id = u.user_id
-             ORDER BY o.order_date DESC`
-        );
+        const recentOrders = await Order.aggregate([
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'customer_id',
+                    foreignField: '_id',
+                    as: 'customer'
+                }
+            },
+            { $unwind: '$customer' },
+            {
+                $project: {
+                    order_id: '$_id',
+                    customer_id: 1,
+                    total_amount: 1,
+                    payment_method: 1,
+                    order_date: 1,
+                    customer_name: '$customer.username'
+                }
+            },
+            { $sort: { order_date: -1 } },
+            { $limit: 5 }
+        ]);
 
         res.json({
             totalOrders,
             totalRevenue,
             totalMenuItems,
             todaySales,
-            recentOrders: recentOrders.recordset
+            recentOrders
         });
     } catch (err) {
         console.error('Dashboard error:', err);
@@ -43,22 +60,44 @@ exports.getDashboard = async (req, res) => {
 exports.getAllOrders = async (req, res) => {
     try {
         const { search } = req.query;
-        let queryStr = `
-            SELECT o.*, u.username as customer_name
-            FROM Orders o
-            JOIN Users u ON o.customer_id = u.user_id
-        `;
-        const params = [];
+        let matchStage = {};
 
         if (search) {
-            queryStr += ' WHERE o.order_id LIKE @param0 OR u.username LIKE @param0';
-            params.push(`%${search}%`);
+            const users = await User.find({ username: { $regex: search, $options: 'i' } }).select('_id');
+            const userIds = users.map(u => u._id);
+            matchStage = {
+                $or: [
+                    { _id: mongoose.Types.ObjectId.isValid(search) ? new mongoose.Types.ObjectId(search) : null },
+                    { customer_id: { $in: userIds } }
+                ]
+            };
         }
 
-        queryStr += ' ORDER BY o.order_date DESC';
+        const orders = await Order.aggregate([
+            ...(Object.keys(matchStage).length > 0 ? [{ $match: matchStage }] : []),
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'customer_id',
+                    foreignField: '_id',
+                    as: 'customer'
+                }
+            },
+            { $unwind: '$customer' },
+            {
+                $project: {
+                    order_id: '$_id',
+                    customer_id: 1,
+                    total_amount: 1,
+                    payment_method: 1,
+                    order_date: 1,
+                    customer_name: '$customer.username'
+                }
+            },
+            { $sort: { order_date: -1 } }
+        ]);
 
-        const result = await query(queryStr, params);
-        res.json(result.recordset);
+        res.json(orders);
     } catch (err) {
         console.error('Get orders error:', err);
         res.status(500).json({ error: 'Internal server error' });
@@ -69,29 +108,69 @@ exports.getOrderDetails = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const orderResult = await query(
-            `SELECT o.*, u.username as customer_name
-             FROM Orders o
-             JOIN Users u ON o.customer_id = u.user_id
-             WHERE o.order_id = @param0`,
-            [id]
-        );
+        const orderResult = await Order.aggregate([
+            { $match: { _id: new mongoose.Types.ObjectId(id) } },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'customer_id',
+                    foreignField: '_id',
+                    as: 'customer'
+                }
+            },
+            { $unwind: '$customer' },
+            {
+                $project: {
+                    order_id: '$_id',
+                    customer_id: 1,
+                    total_amount: 1,
+                    payment_method: 1,
+                    order_date: 1,
+                    customer_name: '$customer.username'
+                }
+            }
+        ]);
 
-        if (orderResult.recordset.length === 0) {
+        if (orderResult.length === 0) {
             return res.status(404).json({ error: 'Order not found' });
         }
 
-        const itemsResult = await query(
-            `SELECT oi.*, mi.name, mi.category
-             FROM OrderItems oi
-             JOIN MenuItems mi ON oi.item_id = mi.item_id
-             WHERE oi.order_id = @param0`,
-            [id]
-        );
+        const items = await Order.aggregate([
+            { $match: { _id: new mongoose.Types.ObjectId(id) } },
+            {
+                $lookup: {
+                    from: 'orderitems',
+                    localField: '_id',
+                    foreignField: 'order_id',
+                    as: 'orderItems'
+                }
+            },
+            { $unwind: '$orderItems' },
+            {
+                $lookup: {
+                    from: 'menuitems',
+                    localField: 'orderItems.item_id',
+                    foreignField: '_id',
+                    as: 'menuItem'
+                }
+            },
+            { $unwind: '$menuItem' },
+            {
+                $project: {
+                    order_item_id: '$orderItems._id',
+                    order_id: 1,
+                    item_id: '$orderItems.item_id',
+                    quantity: '$orderItems.quantity',
+                    subtotal: '$orderItems.subtotal',
+                    name: '$menuItem.name',
+                    category: '$menuItem.category'
+                }
+            }
+        ]);
 
         res.json({
-            order: orderResult.recordset[0],
-            items: itemsResult.recordset
+            order: orderResult[0],
+            items
         });
     } catch (err) {
         console.error('Get order details error:', err);
@@ -103,53 +182,77 @@ exports.getSalesReport = async (req, res) => {
     try {
         const { type, start_date, end_date } = req.query;
 
-        let queryStr = '';
-        const params = [];
+        let groupStage;
+        let matchStage = {};
 
         if (type === 'daily') {
-            queryStr = `
-                SELECT CAST(order_date AS DATE) as date,
-                       COUNT(*) as order_count,
-                       ISNULL(SUM(total_amount), 0) as total_sales
-                FROM Orders
-                GROUP BY CAST(order_date AS DATE)
-                ORDER BY date DESC
-            `;
+            groupStage = {
+                $group: {
+                    _id: { $dateToString: { format: '%Y-%m-%d', date: '$order_date' } },
+                    order_count: { $sum: 1 },
+                    total_sales: { $sum: '$total_amount' }
+                }
+            };
         } else if (type === 'monthly') {
-            queryStr = `
-                SELECT YEAR(order_date) as year,
-                       MONTH(order_date) as month,
-                       COUNT(*) as order_count,
-                       ISNULL(SUM(total_amount), 0) as total_sales
-                FROM Orders
-                GROUP BY YEAR(order_date), MONTH(order_date)
-                ORDER BY year DESC, month DESC
-            `;
+            groupStage = {
+                $group: {
+                    _id: {
+                        year: { $year: '$order_date' },
+                        month: { $month: '$order_date' }
+                    },
+                    order_count: { $sum: 1 },
+                    total_sales: { $sum: '$total_amount' }
+                }
+            };
         } else if (start_date && end_date) {
-            queryStr = `
-                SELECT CAST(order_date AS DATE) as date,
-                       COUNT(*) as order_count,
-                       ISNULL(SUM(total_amount), 0) as total_sales
-                FROM Orders
-                WHERE CAST(order_date AS DATE) >= @param0
-                  AND CAST(order_date AS DATE) <= @param1
-                GROUP BY CAST(order_date AS DATE)
-                ORDER BY date DESC
-            `;
-            params.push(start_date, end_date);
+            matchStage = {
+                order_date: {
+                    $gte: new Date(start_date),
+                    $lte: new Date(end_date + 'T23:59:59.999Z')
+                }
+            };
+            groupStage = {
+                $group: {
+                    _id: { $dateToString: { format: '%Y-%m-%d', date: '$order_date' } },
+                    order_count: { $sum: 1 },
+                    total_sales: { $sum: '$total_amount' }
+                }
+            };
         } else {
             return res.status(400).json({
                 error: 'Specify type (daily/monthly) or start_date and end_date'
             });
         }
 
-        const result = await query(queryStr, params);
+        const report = await Order.aggregate([
+            ...(Object.keys(matchStage).length > 0 ? [{ $match: matchStage }] : []),
+            groupStage,
+            { $sort: { _id: -1 } }
+        ]);
 
-        const totalResult = await query('SELECT ISNULL(SUM(total_amount), 0) as grand_total FROM Orders');
-        const totalRevenue = totalResult.recordset[0].grand_total;
+        const totalResult = await Order.aggregate([
+            { $group: { _id: null, grand_total: { $sum: '$total_amount' } } }
+        ]);
+        const totalRevenue = totalResult.length > 0 ? totalResult[0].grand_total : 0;
+
+        const formatted = report.map(r => {
+            if (type === 'monthly') {
+                return {
+                    year: r._id.year,
+                    month: r._id.month,
+                    order_count: r.order_count,
+                    total_sales: r.total_sales
+                };
+            }
+            return {
+                date: r._id,
+                order_count: r.order_count,
+                total_sales: r.total_sales
+            };
+        });
 
         res.json({
-            report: result.recordset,
+            report: formatted,
             total_revenue: totalRevenue
         });
     } catch (err) {

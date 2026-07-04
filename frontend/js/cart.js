@@ -55,14 +55,14 @@ function renderCart(data) {
             <td class="fw-semibold">₹${parseFloat(item.price).toFixed(2)}</td>
             <td>
                 <div class="d-flex align-items-center gap-2">
-                    <button class="quantity-btn" onclick="updateQty(${item.item_id}, ${item.quantity - 1})">-</button>
+                    <button class="quantity-btn" onclick="updateQty('${item.item_id}', ${item.quantity - 1})">-</button>
                     <span class="fw-bold">${item.quantity}</span>
-                    <button class="quantity-btn" onclick="updateQty(${item.item_id}, ${item.quantity + 1})">+</button>
+                    <button class="quantity-btn" onclick="updateQty('${item.item_id}', ${item.quantity + 1})">+</button>
                 </div>
             </td>
             <td class="fw-bold text-danger">₹${parseFloat(item.subtotal).toFixed(2)}</td>
             <td>
-                <button class="btn btn-outline-danger btn-sm" onclick="removeItem(${item.item_id})">
+                <button class="btn btn-outline-danger btn-sm" onclick="removeItem('${item.item_id}')">
                     <i class="fas fa-trash"></i>
                 </button>
             </td>

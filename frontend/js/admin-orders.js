@@ -35,7 +35,7 @@ function renderOrdersTable(orders) {
             <td><span class="badge bg-gold text-dark">${order.payment_method}</span></td>
             <td>${new Date(order.order_date).toLocaleString()}</td>
             <td>
-                <button class="btn btn-sm btn-primary-custom" onclick="viewOrder(${order.order_id})">
+                <button class="btn btn-sm btn-primary-custom" onclick="viewOrder('${order.order_id}')">
                     <i class="fas fa-eye me-1"></i>View
                 </button>
             </td>
@@ -95,6 +95,43 @@ async function viewOrder(id) {
     } catch (err) {
         showToast('Failed to load order details: ' + err.message, 'error');
     }
+}
+
+function printBill() {
+    const content = document.getElementById('orderDetailsContent').innerHTML;
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Print Bill</title>
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+            <style>
+                body { padding: 40px; font-family: 'Segoe UI', Arial, sans-serif; }
+                .invoice-header { text-align: center; margin-bottom: 30px; }
+                .invoice-header h2 { color: #dc3545; margin-bottom: 5px; }
+                .invoice-header p { color: #666; margin-bottom: 2px; }
+                .table { margin-bottom: 20px; }
+                .table thead th { background: #dc3545; color: white; }
+                .total-section { text-align: right; margin-top: 20px; }
+                .total-section h4 { color: #dc3545; }
+                @media print { body { padding: 20px; } }
+            </style>
+        </head>
+        <body>
+            <div class="invoice-header">
+                <h2><i class="fas fa-utensils"></i> Royal Feast</h2>
+                <p>Fine Dining Restaurant</p>
+                <hr>
+            </div>
+            ${content}
+            <p class="text-center text-muted mt-4">Thank you for your visit!</p>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => printWindow.print(), 500);
 }
 
 function searchOrders() {

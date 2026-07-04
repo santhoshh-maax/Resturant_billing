@@ -48,10 +48,10 @@ function renderMenuTable() {
             <td><span class="badge bg-danger">${item.category}</span></td>
             <td class="fw-bold">${formatCurrency(item.price)}</td>
             <td>
-                <button class="btn btn-sm btn-warning me-1" onclick="editItem(${item.item_id})" title="Edit">
+                <button class="btn btn-sm btn-warning me-1" onclick="editItem('${item.item_id}')" title="Edit">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.item_id})" title="Delete">
+                <button class="btn btn-sm btn-danger" onclick="deleteItem('${item.item_id}')" title="Delete">
                     <i class="fas fa-trash"></i>
                 </button>
             </td>

@@ -105,3 +105,36 @@ function showInvoice(data) {
     document.getElementById('invoiceGst').textContent = formatCurrency(data.gst);
     document.getElementById('invoiceTotal').textContent = formatCurrency(data.total_amount);
 }
+
+function printInvoice() {
+    const invoice = document.getElementById('invoiceSection').innerHTML;
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Print Invoice</title>
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+            <style>
+                body { padding: 40px; font-family: 'Segoe UI', Arial, sans-serif; }
+                .invoice { max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 30px; border-radius: 8px; }
+                .invoice-header { text-align: center; margin-bottom: 25px; }
+                .invoice-header h3 { color: #dc3545; }
+                .invoice-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                .invoice-table th { background: #dc3545; color: #fff; padding: 10px; text-align: left; }
+                .invoice-table td { padding: 8px 10px; border-bottom: 1px solid #eee; }
+                .invoice-total { text-align: right; margin-top: 15px; }
+                .invoice-total h4 { color: #dc3545; }
+                @media print { body { padding: 20px; } .invoice { border: none; } }
+            </style>
+        </head>
+        <body>
+            <div class="invoice">${invoice}</div>
+            <p class="text-center text-muted mt-4">Thank you for dining with us!</p>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => printWindow.print(), 500);
+}
