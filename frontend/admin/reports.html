@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - Royal Feast</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-lg-2 col-md-3 p-0">
+                <div class="admin-sidebar">
+                    <div class="sidebar-brand">
+                        <h4><i class="fas fa-utensils me-2"></i>Royal Feast</h4>
+                        <small class="text-muted">Admin Panel</small>
+                    </div>
+                    <ul class="nav flex-column mt-3">
+                        <li class="nav-item">
+                            <a class="nav-link" href="dashboard.html"><i class="fas fa-tachometer-alt"></i>Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="menu-management.html"><i class="fas fa-utensils"></i>Menu Management</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="orders.html"><i class="fas fa-shopping-cart"></i>Orders</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="reports.html"><i class="fas fa-chart-bar"></i>Reports</a>
+                        </li>
+                        <li class="nav-item mt-4">
+                            <a class="nav-link text-danger" href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i>Logout</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col-lg-10 col-md-9 p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3 class="fw-bold"><i class="fas fa-chart-bar text-danger me-2"></i>Sales Reports</h3>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header gold-header">
+                                <i class="fas fa-calendar-day me-2"></i>Daily Sales Report
+                            </div>
+                            <div class="card-body">
+                                <button class="btn btn-primary-custom w-100" onclick="loadReport('daily')">
+                                    <i class="fas fa-eye me-2"></i>View Daily Report
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header gold-header">
+                                <i class="fas fa-calendar-alt me-2"></i>Monthly Sales Report
+                            </div>
+                            <div class="card-body">
+                                <button class="btn btn-primary-custom w-100" onclick="loadReport('monthly')">
+                                    <i class="fas fa-eye me-2"></i>View Monthly Report
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="reportLoader" class="text-center py-5 d-none">
+                    <div class="spinner-border text-danger" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+
+                <div id="reportContent" style="display:none">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-file-alt me-2"></i><span id="reportTitle">Report</span></span>
+                            <span class="badge bg-gold text-dark p-2" id="totalRevenueBadge">Total: ₹0</span>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-custom mb-0">
+                                    <thead>
+                                        <tr id="reportTableHead"></tr>
+                                    </thead>
+                                    <tbody id="reportTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/admin-reports.js"></script>
+</body>
+</html>

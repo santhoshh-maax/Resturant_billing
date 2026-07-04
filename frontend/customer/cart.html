@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cart - Royal Feast</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="menu.html">
+                <i class="fas fa-utensils"></i> Royal Feast
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item">
+                        <a class="nav-link" href="menu.html"><i class="fas fa-list me-1"></i>Menu</a>
+                    </li>
+                    <li class="nav-item position-relative">
+                        <a class="nav-link active" href="cart.html">
+                            <i class="fas fa-shopping-cart me-1"></i>Cart
+                            <span class="cart-badge" id="cartCount">0</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="logout()">
+                            <i class="fas fa-sign-out-alt me-1"></i>Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-wrapper">
+        <div class="content-wrapper">
+            <div class="container">
+                <h3 class="fw-bold mb-4"><i class="fas fa-shopping-cart text-danger me-2"></i>Your Cart</h3>
+
+                <div id="cartLoader" class="text-center py-5">
+                    <div class="spinner-border text-danger" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+
+                <div id="emptyCart" class="empty-state d-none">
+                    <i class="fas fa-shopping-basket"></i>
+                    <h5>Your cart is empty</h5>
+                    <p class="text-muted">Browse our menu and add items to get started!</p>
+                    <a href="menu.html" class="btn btn-primary-custom"><i class="fas fa-arrow-left me-2"></i>Back to Menu</a>
+                </div>
+
+                <div class="row g-4" id="cartContent" style="display:none">
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="fas fa-list me-2"></i>Cart Items
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-custom mb-0" id="cartTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Item</th>
+                                                <th>Price</th>
+                                                <th>Quantity</th>
+                                                <th>Subtotal</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="cartItems"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="order-summary">
+                            <h5><i class="fas fa-receipt me-2"></i>Order Summary</h5>
+                            <div class="summary-row">
+                                <span>Subtotal</span>
+                                <span id="cartSubtotal">₹0.00</span>
+                            </div>
+                            <div class="summary-row">
+                                <span>GST (18%)</span>
+                                <span id="cartGst">₹0.00</span>
+                            </div>
+                            <div class="summary-total">
+                                <span>Total</span>
+                                <span id="cartTotal">₹0.00</span>
+                            </div>
+                            <button class="btn btn-gold w-100 mt-3 py-2" onclick="proceedToPayment()">
+                                <i class="fas fa-credit-card me-2"></i>Proceed to Payment
+                            </button>
+                            <button class="btn btn-outline-danger w-100 mt-2 py-2" onclick="clearCart()">
+                                <i class="fas fa-trash me-2"></i>Clear Cart
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <div class="container">
+                <p class="mb-0">&copy; 2024 <span class="gold">Royal Feast</span> Restaurant. All rights reserved.</p>
+            </div>
+        </footer>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/cart.js"></script>
+</body>
+</html>
